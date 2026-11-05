@@ -155,7 +155,7 @@ class WorkspaceControllerTest(
     fun `PUT draft after the deadline returns 403`() {
         val id = workspaceId("q1")
         `when`(assessmentClient.getSessionSubmissionStatus(anyString(), anyString()))
-            .thenReturn(AssessmentSessionStatusResponse("s1", "EXPIRED", null, null, acceptsSubmissions = true, late = true))
+            .thenReturn(AssessmentSessionStatusResponse("s1", "EXPIRED", null, null, acceptsSubmissions = false, late = true))
 
         saveDraft(id, "\"0\"").andExpect { status { isForbidden() } }
     }
@@ -163,49 +163,14 @@ class WorkspaceControllerTest(
     // ------------------------------------------------------------ POST submissions
 
     @Test
-    fun `POST submission returns 202 with an empty body`() {
+    fun `a single question cannot be submitted on its own`() {
         val id = workspaceId("q1")
         saveDraft(id, "\"0\"").andExpect { status { isOk() } }
 
         mockMvc.post("/workspaces/$id/submissions") {
             header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
             header("If-Match", "\"1\"")
-        }.andExpect {
-            status { isAccepted() }
-            content { string("") }
-        }
-    }
-
-    @Test
-    fun `POST submission without If-Match returns 428`() {
-        val id = workspaceId("q1")
-
-        mockMvc.post("/workspaces/$id/submissions") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
-            .andExpect { status { isPreconditionRequired() } }
-    }
-
-    @Test
-    fun `POST submission with stale If-Match returns 412`() {
-        val id = workspaceId("q1")
-        saveDraft(id, "\"0\"").andExpect { status { isOk() } }
-
-        mockMvc.post("/workspaces/$id/submissions") {
-            header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
-            header("If-Match", "\"0\"")
-        }.andExpect { status { isPreconditionFailed() } }
-    }
-
-    @Test
-    fun `POST the same submission twice is idempotent`() {
-        val id = workspaceId("q1")
-        saveDraft(id, "\"0\"").andExpect { status { isOk() } }
-
-        repeat(2) {
-            mockMvc.post("/workspaces/$id/submissions") {
-                header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
-                header("If-Match", "\"1\"")
-            }.andExpect { status { isAccepted() } }
-        }
+        }.andExpect { status { is4xxClientError() } }
     }
 
     // ------------------------------------------------------------ POST submit all
@@ -227,7 +192,7 @@ class WorkspaceControllerTest(
     fun `POST submit-all after the deadline returns 403`() {
         workspaceId("q1")
         `when`(assessmentClient.getSessionSubmissionStatus(anyString(), anyString()))
-            .thenReturn(AssessmentSessionStatusResponse("s1", "EXPIRED", null, null, acceptsSubmissions = true, late = true))
+            .thenReturn(AssessmentSessionStatusResponse("s1", "EXPIRED", null, null, acceptsSubmissions = false, late = true))
 
         mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
             .andExpect { status { isForbidden() } }

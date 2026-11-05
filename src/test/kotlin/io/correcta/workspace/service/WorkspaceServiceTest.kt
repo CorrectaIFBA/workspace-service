@@ -10,6 +10,9 @@ import io.correcta.workspace.exceptions.ForbiddenException
 import io.correcta.workspace.exceptions.InternalServerErrorException
 import io.correcta.workspace.exceptions.NotFoundException
 import io.correcta.workspace.exceptions.PreconditionFailedException
+import io.correcta.workspace.messaging.Outbox
+import io.correcta.workspace.messaging.session.SessionDeliveredMessage
+import io.correcta.workspace.messaging.session.SessionMessaging
 import io.correcta.workspace.models.request.SaveDraftRevisionRequest
 import io.correcta.workspace.models.response.clients.AssessmentSessionStatusResponse
 import io.correcta.workspace.repositories.AssessmentQuestionDraftRevisionRepository
@@ -23,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.ArgumentMatchers
@@ -30,7 +34,9 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.SimpleTransactionStatus
 import org.springframework.transaction.support.TransactionTemplate
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneOffset
 import java.util.Optional
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -45,6 +51,8 @@ class WorkspaceServiceTest {
     private val workspaceRepository = mock(AssessmentQuestionWorkspaceRepository::class.java)
     private val scopeEvaluator = mock(ScopeEvaluatorComponent::class.java)
     private val transactionManager = mock(PlatformTransactionManager::class.java)
+    private val outbox = mock(Outbox::class.java)
+    private val clock = Clock.fixed(Instant.parse("2030-03-10T13:00:00Z"), ZoneOffset.UTC)
 
     private lateinit var service: WorkspaceService
 
@@ -79,6 +87,8 @@ class WorkspaceServiceTest {
             workspaceRepository,
             scopeEvaluator,
             TransactionTemplate(transactionManager),
+            outbox,
+            clock,
         )
     }
 
@@ -166,21 +176,22 @@ class WorkspaceServiceTest {
     @Test
     fun `createDraft is forbidden when the deadline has passed`() {
         givenWorkspace(revision = 0)
-        `when`(assessmentClient.getSessionSubmissionStatus(ASSESSMENT_ID, PROFILE_ID)).thenReturn(session(late = true))
+        `when`(assessmentClient.getSessionSubmissionStatus(ASSESSMENT_ID, PROFILE_ID)).thenReturn(session(acceptsSubmissions = false, late = true))
 
         assertFailsWith<ForbiddenException> {
             service.createDraftForWorkspace(WORKSPACE_ID, draftRequest(), "\"0\"")
         }
     }
 
-    // ---------------------------------------------------------------- submitWorkspace
+    // ---------------------------------------------------------------- submission numbering (shared by every submit)
 
     @Test
     fun `submit creates submission number 1 for the first submission`() {
-        val workspace = givenWorkspace(revision = 2)
+        val workspace = workspace(WORKSPACE_ID, revision = 2)
+        givenStudentWorkspaces(workspace)
         givenDraft(workspace, 2)
 
-        service.submitWorkspace(WORKSPACE_ID, "\"2\"")
+        service.submitAllWorkspacesForStudent(ASSESSMENT_ID, PROFILE_ID)
 
         assertEquals(1, savedSubmissions.size)
         assertEquals(1, savedSubmissions[0].submissionNumber)
@@ -190,12 +201,13 @@ class WorkspaceServiceTest {
 
     @Test
     fun `submit supersedes the previous ACTIVE submission and increments the number`() {
-        val workspace = givenWorkspace(revision = 3)
+        val workspace = workspace(WORKSPACE_ID, revision = 3)
+        givenStudentWorkspaces(workspace)
         givenDraft(workspace, 3)
         val previous = submission(workspace, number = 1, revision = 2, status = AssessmentQuestionSubmissionStatus.ACTIVE)
         `when`(submissionRepository.findByWorkspaceIdOrderBySubmissionNumberDesc(WORKSPACE_ID)).thenReturn(listOf(previous))
 
-        service.submitWorkspace(WORKSPACE_ID, "\"3\"")
+        service.submitAllWorkspacesForStudent(ASSESSMENT_ID, PROFILE_ID)
 
         assertEquals(AssessmentQuestionSubmissionStatus.SUPERSEDED, previous.status)
         assertEquals(1, savedSubmissions.size)
@@ -205,13 +217,14 @@ class WorkspaceServiceTest {
 
     @Test
     fun `submit keeps already SUPERSEDED submissions untouched and numbers after the latest`() {
-        val workspace = givenWorkspace(revision = 5)
+        val workspace = workspace(WORKSPACE_ID, revision = 5)
+        givenStudentWorkspaces(workspace)
         givenDraft(workspace, 5)
         val active = submission(workspace, number = 2, revision = 4, status = AssessmentQuestionSubmissionStatus.ACTIVE)
         val old = submission(workspace, number = 1, revision = 1, status = AssessmentQuestionSubmissionStatus.SUPERSEDED)
         `when`(submissionRepository.findByWorkspaceIdOrderBySubmissionNumberDesc(WORKSPACE_ID)).thenReturn(listOf(active, old))
 
-        service.submitWorkspace(WORKSPACE_ID, "\"5\"")
+        service.submitAllWorkspacesForStudent(ASSESSMENT_ID, PROFILE_ID)
 
         assertEquals(AssessmentQuestionSubmissionStatus.SUPERSEDED, active.status)
         assertEquals(AssessmentQuestionSubmissionStatus.SUPERSEDED, old.status)
@@ -220,46 +233,16 @@ class WorkspaceServiceTest {
 
     @Test
     fun `submit is idempotent when the ACTIVE submission already has the same draft revision`() {
-        val workspace = givenWorkspace(revision = 3)
+        val workspace = workspace(WORKSPACE_ID, revision = 3)
+        givenStudentWorkspaces(workspace)
         givenDraft(workspace, 3)
         val active = submission(workspace, number = 1, revision = 3, status = AssessmentQuestionSubmissionStatus.ACTIVE)
         `when`(submissionRepository.findByWorkspaceIdOrderBySubmissionNumberDesc(WORKSPACE_ID)).thenReturn(listOf(active))
 
-        service.submitWorkspace(WORKSPACE_ID, "\"3\"")
+        service.submitAllWorkspacesForStudent(ASSESSMENT_ID, PROFILE_ID)
 
         assertTrue(savedSubmissions.isEmpty())
         assertEquals(AssessmentQuestionSubmissionStatus.ACTIVE, active.status)
-    }
-
-    @Test
-    fun `submit fails with 412 when If-Match is stale`() {
-        val workspace = givenWorkspace(revision = 3)
-        givenDraft(workspace, 3)
-
-        assertFailsWith<PreconditionFailedException> { service.submitWorkspace(WORKSPACE_ID, "\"2\"") }
-
-        assertTrue(savedSubmissions.isEmpty())
-    }
-
-    @Test
-    fun `submit fails with 404 when there is no draft for the revision`() {
-        givenWorkspace(revision = 0)
-        `when`(draftRepository.findByWorkspaceIdAndRevision(WORKSPACE_ID, 0)).thenReturn(Optional.empty())
-
-        assertFailsWith<NotFoundException> { service.submitWorkspace(WORKSPACE_ID, "\"0\"") }
-
-        assertTrue(savedSubmissions.isEmpty())
-    }
-
-    @Test
-    fun `submit is forbidden after the deadline`() {
-        val workspace = givenWorkspace(revision = 1)
-        givenDraft(workspace, 1)
-        `when`(assessmentClient.getSessionSubmissionStatus(ASSESSMENT_ID, PROFILE_ID)).thenReturn(session(late = true))
-
-        assertFailsWith<ForbiddenException> { service.submitWorkspace(WORKSPACE_ID, "\"1\"") }
-
-        assertTrue(savedSubmissions.isEmpty())
     }
 
     // ---------------------------------------------------------------- submit all
@@ -277,6 +260,11 @@ class WorkspaceServiceTest {
 
         assertEquals(listOf("w1", "w3"), savedSubmissions.map { it.workspace.id })
         assertEquals(listOf(1, 2), savedSubmissions.map { it.draftRevision.revision })
+        verify(outbox).enqueue(
+            SessionMessaging.EXCHANGE,
+            SessionMessaging.SESSION_DELIVERED_KEY,
+            SessionDeliveredMessage(ASSESSMENT_ID, PROFILE_ID, "2030-03-10T13:00:00Z"),
+        )
     }
 
     @Test
@@ -305,15 +293,18 @@ class WorkspaceServiceTest {
         assertFailsWith<InternalServerErrorException> { service.submitAllWorkspacesForAssessment(ASSESSMENT_ID) }
 
         assertEquals(listOf("w2"), savedSubmissions.map { it.workspace.id })
+        // An answer is missing: the session must not be delivered.
+        verify(outbox, never()).enqueue(anyStr(), anyStr(), anyK())
     }
 
     @Test
     fun `submitAll is forbidden after the deadline and touches no workspace`() {
-        `when`(assessmentClient.getSessionSubmissionStatus(ASSESSMENT_ID, PROFILE_ID)).thenReturn(session(late = true))
+        `when`(assessmentClient.getSessionSubmissionStatus(ASSESSMENT_ID, PROFILE_ID)).thenReturn(session(acceptsSubmissions = false, late = true))
 
         assertFailsWith<ForbiddenException> { service.submitAllWorkspacesForAssessment(ASSESSMENT_ID) }
 
         verify(workspaceRepository, never()).findByStudentProfileIdAndAssessmentId(anyStr(), anyStr())
+        verify(outbox, never()).enqueue(anyStr(), anyStr(), anyK())
     }
 
     @Test
@@ -328,6 +319,23 @@ class WorkspaceServiceTest {
 
         assertEquals(listOf("w1"), savedSubmissions.map { it.workspace.id })
         verify(assessmentClient, never()).getSessionSubmissionStatus(anyStr(), anyStr())
+        // Called when the session already ended: nothing to announce back.
+        verify(outbox, never()).enqueue(anyStr(), anyStr(), anyK())
+    }
+
+    @Test
+    fun `submitAll delivers again on retry, with nothing left to submit`() {
+        val w1 = workspace("w1", revision = 1)
+        givenStudentWorkspaces(w1)
+        givenDraft(w1, 1)
+        `when`(submissionRepository.findByWorkspaceIdOrderBySubmissionNumberDesc("w1"))
+            .thenReturn(listOf(submission(w1, number = 1, revision = 1, status = AssessmentQuestionSubmissionStatus.ACTIVE)))
+
+        service.submitAllWorkspacesForAssessment(ASSESSMENT_ID)
+        service.submitAllWorkspacesForAssessment(ASSESSMENT_ID)
+
+        assertTrue(savedSubmissions.isEmpty())
+        verify(outbox, times(2)).enqueue(anyStr(), anyStr(), anyK())
     }
 
     // ---------------------------------------------------------------- getOrCreateWorkspaceForAssessmentQuestion

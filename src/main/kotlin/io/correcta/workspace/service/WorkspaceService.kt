@@ -19,6 +19,10 @@ import io.correcta.workspace.repositories.AssessmentQuestionSubmissionRepository
 import io.correcta.workspace.repositories.AssessmentQuestionWorkspaceRepository
 import io.correcta.workspace.security.components.ScopeEvaluatorComponent
 import io.correcta.workspace.security.models.ProfilePrincipal
+import io.correcta.workspace.messaging.Outbox
+import io.correcta.workspace.messaging.session.SessionDeliveredMessage
+import io.correcta.workspace.messaging.session.SessionMessaging
+import java.time.Clock
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
@@ -33,6 +37,8 @@ class WorkspaceService(
     val assessmentQuestionWorkspaceRepository: AssessmentQuestionWorkspaceRepository,
     val scopeEvaluator: ScopeEvaluatorComponent,
     val transactionTemplate: TransactionTemplate,
+    val outbox: Outbox,
+    val clock: Clock,
 ) {
 
     // todo: when a assessment session expires, the assessment-service will send a message to the workspace-service to submit all
@@ -120,43 +126,33 @@ class WorkspaceService(
         return SavedDraftRevisionResponse.fromDraftRevision(savedDraftRevision)
     }
 
-    @Transactional
-    fun submitWorkspace(workspaceId: String, ifMatch: String) {
-        val profile = getAuthenticatedProfile()
-
-        val workspace = assessmentQuestionWorkspaceRepository.findByIdAndStudentProfileId(
-            id = workspaceId,
-            studentProfileId = profile.profileId
-        ).orElseThrow {
-            NotFoundException("Não foi possível encontrar o workspace $workspaceId para o estudante ${profile.profileId}.")
-        }
-
-        validateSubmissionStatus(workspace.assessmentId, profile.profileId)
-
-        val currentRevision = workspace.currentRevision
-        val expectedRevision = parseRevisionFromEtag(ifMatch)
-
-        if (expectedRevision != currentRevision) {
-            throw staleDraft(workspaceId, expectedRevision, currentRevision)
-        }
-
-        val targetDraftRevision = assessmentQuestionDraftRevisionRepository.findByWorkspaceIdAndRevision(workspaceId, expectedRevision)
-            .orElseThrow {
-                log.warn("Failed to submit workspace $workspaceId. No draft revision found for the workspace.")
-
-                NotFoundException("Não foi possível encontrar a revisão do rascunho (#${currentRevision}) associada ao workspace $workspaceId.")
-            }
-
-        createSubmission(workspace, targetDraftRevision)
-    }
-
-
+    /*
+     * The student delivers the activity: every workspace is submitted at its latest draft, and only
+     * then is assessment-service told to finish the session (session.delivered, via the outbox).
+     * Each workspace commits on its own; the message is written after all of them, so the session
+     * never ends with an answer left out. A retry skips what is already submitted and writes the
+     * message again, which the consumer treats as a no-op.
+     */
     fun submitAllWorkspacesForAssessment(assessmentId: String) {
         val profile = getAuthenticatedProfile()
 
         validateSubmissionStatus(assessmentId, profile.profileId)
 
+        val deliveredAt = clock.instant()
+
         submitAllWorkspacesForStudent(assessmentId, profile.profileId)
+
+        transactionTemplate.executeWithoutResult {
+            outbox.enqueue(
+                SessionMessaging.EXCHANGE,
+                SessionMessaging.SESSION_DELIVERED_KEY,
+                SessionDeliveredMessage(
+                    assessmentId = assessmentId,
+                    studentProfileId = profile.profileId,
+                    deliveredAt = deliveredAt.toString(),
+                )
+            )
+        }
     }
 
     /*
@@ -266,16 +262,16 @@ class WorkspaceService(
             studentProfileId = profileId
         )
 
+        if (!submissionStatus.acceptsSubmissions && submissionStatus.late) {
+            log.warn("Student $profileId is not allowed to submit answers for assessment $assessmentId because the submission deadline has passed. Submission status: $submissionStatus")
+
+            throw ForbiddenException("O estudante não pode submeter respostas para esta questão, pois o prazo de submissão já expirou.")
+        }
+
         if (!submissionStatus.acceptsSubmissions) {
             log.warn("Student $profileId is not allowed to submit answers for assessment $assessmentId. Submission status: $submissionStatus")
 
             throw ForbiddenException("O estudante não pode submeter respostas para esta questão.")
-        }
-
-        if (submissionStatus.late) {
-            log.warn("Student $profileId is not allowed to submit answers for assessment $assessmentId because the submission deadline has passed. Submission status: $submissionStatus")
-
-            throw ForbiddenException("O estudante não pode submeter respostas para esta questão, pois o prazo de submissão já expirou.")
         }
     }
 

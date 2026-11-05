@@ -47,15 +47,6 @@ interface WorkspaceController {
         @RequestHeader("If-Match") ifMatch: String,
     ): GetWorkspaceResponse // idk, maybe return stuff related to the actual run
 
-    @PostMapping("/{workspaceId}/submissions")
-    @IsLoggedUser
-    @IsProfileType("STUDENT")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    fun submitWorkspace(
-        @PathVariable workspaceId: String,
-        @RequestHeader("If-Match") ifMatch: String,
-    )
-
     @PostMapping("/assessment/{assessmentId}/submissions")
     @IsLoggedUser
     @IsProfileType("STUDENT")

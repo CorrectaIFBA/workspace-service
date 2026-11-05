@@ -2,6 +2,8 @@ package io.correcta.workspace.integration
 
 import com.jayway.jsonpath.JsonPath
 import io.correcta.workspace.clients.AssessmentClient
+import io.correcta.workspace.messaging.OutboxMessageRepository
+import io.correcta.workspace.messaging.OutboxRelay
 import io.correcta.workspace.models.response.clients.AssessmentSessionStatusResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,6 +28,7 @@ import java.util.UUID
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.Executors
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Real PostgreSQL + Flyway migrations (V1..V3) + ddl-auto=validate, so this also proves the schema matches the entities.
@@ -38,6 +41,8 @@ import kotlin.test.assertEquals
 class WorkspaceConcurrencyIntegrationTest(
     @Autowired val mockMvc: MockMvc,
     @Autowired val jdbc: JdbcTemplate,
+    @Autowired val outboxMessageRepository: OutboxMessageRepository,
+    @Autowired val outboxRelay: OutboxRelay,
 ) {
 
     @MockitoBean
@@ -96,25 +101,13 @@ class WorkspaceConcurrencyIntegrationTest(
     // ------------------------------------------------------------ submissions
 
     @Test
-    fun `concurrent submits of the same revision create exactly one ACTIVE submission`() {
+    fun `delivering again after a new draft supersedes the previous submission`() {
         val workspaceId = createWorkspace("q1")
         saveDraft(workspaceId, "\"0\"")
-
-        val statuses = inParallel(8) { submit(workspaceId, "\"1\"") }
-
-        assertEquals(List(8) { 202 }, statuses, "every duplicate must be a no-op 202, got $statuses")
-        assertEquals(1, count("select count(*) from assessment_question_submissions where workspace_id = ?", workspaceId))
-        assertEquals(1, count("select count(*) from assessment_question_submissions where workspace_id = ? and status = 'ACTIVE'", workspaceId))
-    }
-
-    @Test
-    fun `resubmitting a newer revision supersedes the previous submission`() {
-        val workspaceId = createWorkspace("q1")
-        saveDraft(workspaceId, "\"0\"")
-        assertEquals(202, submit(workspaceId, "\"1\""))
+        assertEquals(202, submitAll())
         saveDraft(workspaceId, "\"1\"")
 
-        assertEquals(202, submit(workspaceId, "\"2\""))
+        assertEquals(202, submitAll())
 
         assertEquals(
             listOf("1:SUPERSEDED", "2:ACTIVE"),
@@ -124,6 +117,23 @@ class WorkspaceConcurrencyIntegrationTest(
                 workspaceId,
             ),
         )
+    }
+
+    @Test
+    fun `delivery writes a session-delivered message the relay can pick up`() {
+        val workspaceId = createWorkspace("q1")
+        saveDraft(workspaceId, "\"0\"")
+        val before = count("select count(*) from outbox_messages where routing_key = 'session.delivered'")
+
+        assertEquals(202, submitAll())
+
+        assertEquals(before + 1, count("select count(*) from outbox_messages where routing_key = 'session.delivered' and published_at is null"))
+        assertTrue(outboxMessageRepository.findAll().any { it.routingKey == "session.delivered" && "\"studentProfileId\":\"$PROFILE_ID\"" in it.payload })
+
+        // The relay's PostgreSQL-only SQL (FOR UPDATE SKIP LOCKED) runs against the migrated schema: with no broker
+        // reachable the row records a failed attempt; with one, it is published. Either way it was picked up.
+        outboxRelay.relay()
+        assertEquals(0, count("select count(*) from outbox_messages where published_at is null and attempts = 0"))
     }
 
     @Test
@@ -176,10 +186,9 @@ class WorkspaceConcurrencyIntegrationTest(
             content = """{"sourceCode":"$code","language":"C"}"""
         }.andReturn().response.status
 
-    private fun submit(workspaceId: String, ifMatch: String): Int =
-        mockMvc.post("/workspaces/$workspaceId/submissions") {
+    private fun submitAll(): Int =
+        mockMvc.post("/workspaces/assessment/$assessmentId/submissions") {
             header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
-            header("If-Match", ifMatch)
         }.andReturn().response.status
 
     private fun count(sql: String, vararg args: Any): Int = jdbc.queryForObject(sql, Int::class.java, *args)!!

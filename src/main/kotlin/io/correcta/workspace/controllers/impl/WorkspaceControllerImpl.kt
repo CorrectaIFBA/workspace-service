@@ -32,10 +32,6 @@ class WorkspaceControllerImpl(
         TODO("Not yet implemented")
     }
 
-    override fun submitWorkspace(workspaceId: String, ifMatch: String) {
-        workspaceService.submitWorkspace(workspaceId, ifMatch)
-    }
-
     override fun submitAllWorkspacesForAssessment(assessmentId: String) {
         workspaceService.submitAllWorkspacesForAssessment(assessmentId)
     }
