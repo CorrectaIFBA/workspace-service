@@ -4,6 +4,7 @@ import io.correcta.workspace.models.request.SaveDraftRevisionRequest
 import io.correcta.workspace.models.response.SavedDraftRevisionResponse
 import io.correcta.workspace.models.response.GetWorkspaceResponse
 import io.correcta.workspace.security.annotations.IsLoggedUser
+import io.correcta.workspace.security.annotations.IsProfileType
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -23,6 +24,7 @@ interface WorkspaceController {
 
     @GetMapping("/assessment/{assessmentId}/questions/{questionId}")
     @IsLoggedUser
+    @IsProfileType("STUDENT")
     fun getWorkspaceForAssessmentQuestion(
         @PathVariable assessmentId: String,
         @PathVariable questionId: String,
@@ -30,6 +32,7 @@ interface WorkspaceController {
 
     @PutMapping("/{workspaceId}/drafts")
     @IsLoggedUser
+    @IsProfileType("STUDENT")
     fun createDraftForWorkspace(
         @PathVariable workspaceId: String,
         @Valid @RequestBody body: SaveDraftRevisionRequest,
@@ -38,6 +41,7 @@ interface WorkspaceController {
 
     @PostMapping("/{workspaceId}/runs")
     @IsLoggedUser
+    @IsProfileType("STUDENT")
     fun runWorkspace(
         @PathVariable workspaceId: String,
         @RequestHeader("If-Match") ifMatch: String,
@@ -45,6 +49,7 @@ interface WorkspaceController {
 
     @PostMapping("/{workspaceId}/submissions")
     @IsLoggedUser
+    @IsProfileType("STUDENT")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun submitWorkspace(
         @PathVariable workspaceId: String,
@@ -53,6 +58,7 @@ interface WorkspaceController {
 
     @PostMapping("/assessment/{assessmentId}/submissions")
     @IsLoggedUser
+    @IsProfileType("STUDENT")
     @ResponseStatus(HttpStatus.ACCEPTED)
     fun submitAllWorkspacesForAssessment(
         @PathVariable assessmentId: String,

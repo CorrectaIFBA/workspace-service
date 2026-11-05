@@ -59,6 +59,21 @@ class WorkspaceControllerTest(
         mockMvc.get("/workspaces/assessment/$assessmentId/questions/q1").andExpect { status { isUnauthorized() } }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["FACULTY", "STAFF"])
+    fun `GET workspace is forbidden for non-student profile types`(profileType: String) {
+        mockMvc.get("/workspaces/assessment/$assessmentId/questions/q1") {
+            header("X-User-Id", PROFILE_ID)
+            header("X-User-Profile-Type", profileType)
+        }.andExpect { status { isForbidden() } }
+    }
+
+    @Test
+    fun `GET workspace is forbidden without a profile type`() {
+        mockMvc.get("/workspaces/assessment/$assessmentId/questions/q1") { header("X-User-Id", PROFILE_ID) }
+            .andExpect { status { isForbidden() } }
+    }
+
     @Test
     fun `GET workspace ETag follows the latest saved draft`() {
         val id = workspaceId("q1")
@@ -92,7 +107,7 @@ class WorkspaceControllerTest(
         val id = workspaceId("q1")
 
         mockMvc.put("/workspaces/$id/drafts") {
-            header("X-User-Id", PROFILE_ID)
+            header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
             contentType = MediaType.APPLICATION_JSON
             content = draftBody()
         }.andExpect { status { isPreconditionRequired() } }
@@ -153,7 +168,7 @@ class WorkspaceControllerTest(
         saveDraft(id, "\"0\"").andExpect { status { isOk() } }
 
         mockMvc.post("/workspaces/$id/submissions") {
-            header("X-User-Id", PROFILE_ID)
+            header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
             header("If-Match", "\"1\"")
         }.andExpect {
             status { isAccepted() }
@@ -165,7 +180,7 @@ class WorkspaceControllerTest(
     fun `POST submission without If-Match returns 428`() {
         val id = workspaceId("q1")
 
-        mockMvc.post("/workspaces/$id/submissions") { header("X-User-Id", PROFILE_ID) }
+        mockMvc.post("/workspaces/$id/submissions") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
             .andExpect { status { isPreconditionRequired() } }
     }
 
@@ -175,7 +190,7 @@ class WorkspaceControllerTest(
         saveDraft(id, "\"0\"").andExpect { status { isOk() } }
 
         mockMvc.post("/workspaces/$id/submissions") {
-            header("X-User-Id", PROFILE_ID)
+            header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
             header("If-Match", "\"0\"")
         }.andExpect { status { isPreconditionFailed() } }
     }
@@ -187,7 +202,7 @@ class WorkspaceControllerTest(
 
         repeat(2) {
             mockMvc.post("/workspaces/$id/submissions") {
-                header("X-User-Id", PROFILE_ID)
+                header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
                 header("If-Match", "\"1\"")
             }.andExpect { status { isAccepted() } }
         }
@@ -201,7 +216,7 @@ class WorkspaceControllerTest(
         workspaceId("q2")
         saveDraft(q1, "\"0\"").andExpect { status { isOk() } }
 
-        mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID) }
+        mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
             .andExpect {
                 status { isAccepted() }
                 content { string("") }
@@ -214,14 +229,14 @@ class WorkspaceControllerTest(
         `when`(assessmentClient.getSessionSubmissionStatus(anyString(), anyString()))
             .thenReturn(AssessmentSessionStatusResponse("s1", "EXPIRED", null, null, acceptsSubmissions = true, late = true))
 
-        mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID) }
+        mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
             .andExpect { status { isForbidden() } }
     }
 
     // ------------------------------------------------------------ helpers
 
     private fun getWorkspace(questionId: String, profileId: String = PROFILE_ID): ResultActionsDsl =
-        mockMvc.get("/workspaces/assessment/$assessmentId/questions/$questionId") { header("X-User-Id", profileId) }
+        mockMvc.get("/workspaces/assessment/$assessmentId/questions/$questionId") { header("X-User-Id", profileId); header("X-User-Profile-Type", "STUDENT") }
 
     private fun workspaceId(questionId: String): String {
         val body = getWorkspace(questionId).andReturn().response.contentAsString
@@ -237,7 +252,7 @@ class WorkspaceControllerTest(
         body: String = draftBody(),
         profileId: String = PROFILE_ID,
     ): ResultActionsDsl = mockMvc.put("/workspaces/$workspaceId/drafts") {
-        header("X-User-Id", profileId)
+        header("X-User-Id", profileId); header("X-User-Profile-Type", "STUDENT")
         header("If-Match", ifMatch)
         contentType = MediaType.APPLICATION_JSON
         content = body

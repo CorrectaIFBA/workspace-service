@@ -134,7 +134,7 @@ class WorkspaceConcurrencyIntegrationTest(
         saveDraft(w2, "\"0\"")
 
         val statuses = inParallel(6) {
-            mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID) }
+            mockMvc.post("/workspaces/assessment/$assessmentId/submissions") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
                 .andReturn().response.status
         }
 
@@ -148,7 +148,7 @@ class WorkspaceConcurrencyIntegrationTest(
     @Test
     fun `concurrent first access creates a single workspace`() {
         val statuses = inParallel(6) {
-            mockMvc.get("/workspaces/assessment/$assessmentId/questions/q-race") { header("X-User-Id", PROFILE_ID) }
+            mockMvc.get("/workspaces/assessment/$assessmentId/questions/q-race") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
                 .andReturn().response.status
         }
 
@@ -162,7 +162,7 @@ class WorkspaceConcurrencyIntegrationTest(
     // ------------------------------------------------------------ helpers
 
     private fun createWorkspace(questionId: String): String {
-        val body = mockMvc.get("/workspaces/assessment/$assessmentId/questions/$questionId") { header("X-User-Id", PROFILE_ID) }
+        val body = mockMvc.get("/workspaces/assessment/$assessmentId/questions/$questionId") { header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT") }
             .andReturn().response.contentAsString
 
         return JsonPath.read(body, "$.id")
@@ -170,7 +170,7 @@ class WorkspaceConcurrencyIntegrationTest(
 
     private fun saveDraft(workspaceId: String, ifMatch: String, code: String = "int main() { return 0; }"): Int =
         mockMvc.put("/workspaces/$workspaceId/drafts") {
-            header("X-User-Id", PROFILE_ID)
+            header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
             header("If-Match", ifMatch)
             contentType = MediaType.APPLICATION_JSON
             content = """{"sourceCode":"$code","language":"C"}"""
@@ -178,7 +178,7 @@ class WorkspaceConcurrencyIntegrationTest(
 
     private fun submit(workspaceId: String, ifMatch: String): Int =
         mockMvc.post("/workspaces/$workspaceId/submissions") {
-            header("X-User-Id", PROFILE_ID)
+            header("X-User-Id", PROFILE_ID); header("X-User-Profile-Type", "STUDENT")
             header("If-Match", ifMatch)
         }.andReturn().response.status
 
