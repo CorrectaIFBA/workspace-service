@@ -17,6 +17,7 @@ data class FinalEvaluationRequest(
     sourceCode = submission.draftRevision.sourceCode,
     language = submission.draftRevision.language,
 
+    revision = submission.draftRevision.revision,
     submissionId = submission.id,
     workspaceId = workspace.id!!,
     assessmentId = workspace.assessmentId,

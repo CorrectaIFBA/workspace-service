@@ -8,6 +8,7 @@ data class TriggerEvaluationRequest(
   val language: String,
   val submissionId: String? = null,
   val workspaceId: String,
+  val revision: Int,
   val assessmentId: String,
   val questionId: String,
   val studentProfileId: String,

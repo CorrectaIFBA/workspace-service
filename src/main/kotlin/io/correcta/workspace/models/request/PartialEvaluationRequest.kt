@@ -17,6 +17,7 @@ data class PartialEvaluationRequest(
     sourceCode = draftRevision.sourceCode,
     language = draftRevision.language,
 
+    revision = draftRevision.revision,
     submissionId = null,
     workspaceId = workspace.id!!,
     assessmentId = workspace.assessmentId,
