@@ -8,6 +8,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 
+/**
+ * Entry point for a student opening a question: returns the student's workspace for an
+ * (assessment, question) pair, creating it on first access.
+ */
 @Service
 class WorkspaceService(
   val assessmentQuestionWorkspaceRepository: AssessmentQuestionWorkspaceRepository,
@@ -27,6 +31,13 @@ class WorkspaceService(
     )
   }
 
+  /**
+   * Returns the workspace with its current draft, creating the workspace if it does not exist yet.
+   * Fails with 403 when the session no longer accepts submissions.
+   *
+   * Two concurrent first requests can both try to insert; the unique index rejects the loser,
+   * which then reads the winner's row instead of failing.
+   */
   fun getOrCreateWorkspaceForAssessmentQuestion(profileId: String, assessmentId: String, questionId: String): GetWorkspaceResponse {
     submissionWindowGuard.assertAcceptsSubmissions(assessmentId, profileId)
 

@@ -7,6 +7,10 @@ import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/**
+ * A student's working area for one question of one assessment. Unique per (student, assessment, question).
+ * [currentRevision] points at the latest saved draft (0 = none) and doubles as the optimistic-lock token behind `If-Match`.
+ */
 @Entity
 @Table(
   name = "assessment_question_workspaces",

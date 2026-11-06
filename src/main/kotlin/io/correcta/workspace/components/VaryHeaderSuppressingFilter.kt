@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 import java.io.IOException
 
+/** Removes the `Vary` header from every response. */
 @Component
 class VaryHeaderSuppressingFilter : OncePerRequestFilter() {
   @Throws(ServletException::class, IOException::class)

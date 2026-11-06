@@ -13,6 +13,10 @@ import io.correcta.workspace.service.WorkspaceService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * Thin HTTP layer: resolves the authenticated profile, delegates to the services and sets the ETag
+ * (the quoted revision number) that clients send back in `If-Match`.
+ */
 @RestController
 class WorkspaceControllerImpl(
   val workspaceService: WorkspaceService,

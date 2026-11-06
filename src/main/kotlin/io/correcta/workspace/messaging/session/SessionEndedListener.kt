@@ -9,6 +9,10 @@ import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.stereotype.Component
 
+/**
+ * Consumes `session.ended`: when a session finishes without the student delivering it,
+ * submits the latest draft of each of their workspaces. Ignores the deadline because the session already ended.
+ */
 @Component
 class SessionEndedListener(
   val submissionService: SubmissionService,

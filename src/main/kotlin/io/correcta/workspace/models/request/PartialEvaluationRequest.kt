@@ -5,6 +5,7 @@ import io.correcta.workspace.entities.AssessmentQuestionWorkspace
 import io.correcta.workspace.messaging.evalution.models.enums.EvaluationType
 import io.correcta.workspace.messaging.evalution.models.requests.TriggerEvaluationRequest
 
+/** Ad-hoc run of a draft; not tied to any submission. */
 data class PartialEvaluationRequest(
   val draftRevision: AssessmentQuestionDraftRevision,
   val workspace: AssessmentQuestionWorkspace,

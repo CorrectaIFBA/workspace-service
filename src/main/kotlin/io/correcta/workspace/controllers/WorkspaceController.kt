@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 
+/**
+ * Student-facing API. Every endpoint requires a logged-in STUDENT; the profile comes from the gateway's identity headers.
+ */
 @RequestMapping("/workspaces")
 @Tag(name = "Workspace", description = "Student code workspaces.")
 interface WorkspaceController {

@@ -11,6 +11,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+/**
+ * Saves immutable draft revisions of a workspace using optimistic concurrency:
+ * the client sends the revision it last saw in `If-Match` and the save only succeeds if it is still current.
+ */
 @Service
 class DraftService(
   val assessmentQuestionDraftRevisionRepository: AssessmentQuestionDraftRevisionRepository,
@@ -19,6 +23,13 @@ class DraftService(
   val submissionWindowGuard: SubmissionWindowGuard,
 ) {
 
+  /**
+   * Appends revision `current + 1` to the workspace.
+   *
+   * The revision is checked twice: once against the loaded entity (cheap fast-fail) and once through a
+   * compare-and-swap UPDATE, which is what actually protects against two replicas saving at the same time.
+   * Any mismatch is a 412; a malformed `If-Match` is a 400.
+   */
   @Transactional
   fun createDraftForWorkspace(profileId: String, workspaceId: String, request: SaveDraftRevisionRequest, ifMatch: String): SavedDraftRevisionResponse {
     val workspace = workspaceReader.getOwned(workspaceId, profileId)

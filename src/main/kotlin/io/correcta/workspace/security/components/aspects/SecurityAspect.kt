@@ -16,6 +16,10 @@ import org.springframework.security.authorization.AuthorizationDeniedException
 import org.springframework.stereotype.Component
 import java.lang.reflect.Method
 
+/**
+ * Enforces the `@IsLoggedUser`, `@IsProfileType`, `@IsTraitedWith` and `@IsNotTraitedWith` annotations on controller methods.
+ * Annotations are looked up on the interface too, because endpoints are declared there.
+ */
 @Aspect
 @Component
 class SecurityAspect(

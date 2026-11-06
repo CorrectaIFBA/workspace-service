@@ -6,6 +6,7 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/** One saved version of the code in a workspace. Never edited after creation. */
 @Entity
 @Table(
   name = "assessment_question_draft_revisions",

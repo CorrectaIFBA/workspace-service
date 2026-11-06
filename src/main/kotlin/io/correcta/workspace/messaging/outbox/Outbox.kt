@@ -6,6 +6,10 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 
+/**
+ * Write side of the transactional outbox. [enqueue] only stores the message in the caller's transaction;
+ * [OutboxRelay] sends it to RabbitMQ after commit.
+ */
 @Component
 class Outbox(
   val outboxMessageRepository: OutboxMessageRepository,

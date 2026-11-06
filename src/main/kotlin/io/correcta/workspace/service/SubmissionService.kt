@@ -17,6 +17,12 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 
+/**
+ * Turns the latest draft of each workspace into a numbered submission and asks for its final evaluation.
+ *
+ * Two triggers: the student delivering the whole assessment, and the session ending (handled by
+ * [io.correcta.workspace.messaging.session.SessionEndedListener]).
+ */
 @Service
 class SubmissionService(
   val assessmentQuestionSubmissionRepository: AssessmentQuestionSubmissionRepository,
@@ -29,6 +35,11 @@ class SubmissionService(
   val clock: Clock,
 ) {
 
+  /**
+   * Student-initiated delivery. Checks the deadline, submits every workspace and only then queues
+   * `session.delivered`, so the session is never closed with an answer left out.
+   * Safe to retry: workspaces already submitted are skipped and the message is simply sent again.
+   */
   fun submitAllWorkspacesForAssessment(profileId: String, assessmentId: String) {
     submissionWindowGuard.assertAcceptsSubmissions(assessmentId, profileId)
 
@@ -74,6 +85,7 @@ class SubmissionService(
     }
   }
 
+  /** Submits one workspace at its current revision; workspaces without a draft are skipped. */
   private fun submitLatestDraft(workspaceId: String) {
     val workspace = assessmentQuestionWorkspaceRepository.findById(workspaceId).orElseThrow {
       NotFoundException("Não foi possível encontrar o workspace $workspaceId.")
@@ -90,6 +102,13 @@ class SubmissionService(
     createSubmission(workspace, latestDraft)
   }
 
+  /**
+   * Creates the next submission of a workspace and enqueues its FINAL evaluation, in the caller's transaction.
+   *
+   * The workspace row is locked first so concurrent submits of the same workspace are serialized.
+   * If the ACTIVE submission already points at this draft revision nothing happens (idempotent);
+   * otherwise the previous ACTIVE submission becomes SUPERSEDED, so at most one is ACTIVE per workspace.
+   */
   private fun createSubmission(workspace: AssessmentQuestionWorkspace, draftRevision: AssessmentQuestionDraftRevision) {
     val workspaceId = workspace.id!!
 

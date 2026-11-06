@@ -5,6 +5,7 @@ import io.correcta.workspace.entities.AssessmentQuestionWorkspace
 import io.correcta.workspace.messaging.evalution.models.enums.EvaluationType
 import io.correcta.workspace.messaging.evalution.models.requests.TriggerEvaluationRequest
 
+/** Official evaluation of a submission; the result is tied to [submission]. */
 data class FinalEvaluationRequest(
   val submission: AssessmentQuestionSubmission,
   val workspace: AssessmentQuestionWorkspace,

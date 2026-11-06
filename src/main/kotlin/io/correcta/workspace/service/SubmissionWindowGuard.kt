@@ -5,11 +5,16 @@ import io.correcta.workspace.exceptions.ForbiddenException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
+/**
+ * Asks assessment-service whether a student's session still accepts changes.
+ * Single place for the deadline rule, shared by every operation that writes student work.
+ */
 @Component
 class SubmissionWindowGuard(
   val assessmentClient: AssessmentClient,
 ) {
 
+  /** Throws [io.correcta.workspace.exceptions.ForbiddenException] (403) when the session is closed or past its deadline. */
   fun assertAcceptsSubmissions(assessmentId: String, profileId: String) {
     val submissionStatus = assessmentClient.getSessionSubmissionStatus(
       assessmentId = assessmentId,

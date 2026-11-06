@@ -6,6 +6,10 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/**
+ * A draft revision formally handed in. Numbered per workspace; a new submission supersedes the previous one,
+ * and a partial unique index guarantees at most one ACTIVE submission per workspace.
+ */
 @Entity
 @Table(
   name = "assessment_question_submissions",
