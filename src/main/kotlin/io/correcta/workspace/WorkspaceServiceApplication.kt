@@ -13,5 +13,5 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy
 class WorkspaceServiceApplication
 
 fun main(args: Array<String>) {
-    runApplication<WorkspaceServiceApplication>(*args)
+  runApplication<WorkspaceServiceApplication>(*args)
 }

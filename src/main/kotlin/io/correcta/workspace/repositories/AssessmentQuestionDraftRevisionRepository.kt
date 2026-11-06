@@ -8,12 +8,12 @@ import java.util.Optional
 
 @Repository
 interface AssessmentQuestionDraftRevisionRepository :
-    JpaRepository<AssessmentQuestionDraftRevision, String>,
-    JpaSpecificationExecutor<AssessmentQuestionDraftRevision> {
+  JpaRepository<AssessmentQuestionDraftRevision, String>,
+  JpaSpecificationExecutor<AssessmentQuestionDraftRevision> {
 
-    fun findByWorkspaceIdAndRevision(workspaceId: String, revision: Int): Optional<AssessmentQuestionDraftRevision>
+  fun findByWorkspaceIdAndRevision(workspaceId: String, revision: Int): Optional<AssessmentQuestionDraftRevision>
 
-    fun findFirstByWorkspaceIdOrderByRevisionDesc(workspaceId: String): Optional<AssessmentQuestionDraftRevision>
+  fun findFirstByWorkspaceIdOrderByRevisionDesc(workspaceId: String): Optional<AssessmentQuestionDraftRevision>
 
-    fun findTopByWorkspaceIdOrderByRevisionDesc(workspaceId: String): Optional<AssessmentQuestionDraftRevision>
+  fun findTopByWorkspaceIdOrderByRevisionDesc(workspaceId: String): Optional<AssessmentQuestionDraftRevision>
 }

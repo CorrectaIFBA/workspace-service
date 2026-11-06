@@ -13,20 +13,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 class SecurityConfig {
 
-    @Bean
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
-        // CORS is handled by the gateway; endpoint access is enforced by SecurityAspect annotations.
-        http.authorizeHttpRequests {
-            it.anyRequest().permitAll()
-        }
-        http.sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-        http.httpBasic { it.disable() }
-        http.formLogin { it.disable() }
-        http.anonymous { it.disable() }
-        http.csrf { it.disable() }
-        http.addFilterBefore(HeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter::class.java)
-
-        return http.build()
+  @Bean
+  fun filterChain(http: HttpSecurity): SecurityFilterChain {
+    // CORS is handled by the gateway; endpoint access is enforced by SecurityAspect annotations.
+    http.authorizeHttpRequests {
+      it.anyRequest().permitAll()
     }
+    http.sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+    http.httpBasic { it.disable() }
+    http.formLogin { it.disable() }
+    http.anonymous { it.disable() }
+    http.csrf { it.disable() }
+    http.addFilterBefore(HeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter::class.java)
 
+    return http.build()
+  }
 }

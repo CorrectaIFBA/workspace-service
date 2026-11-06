@@ -3,22 +3,19 @@ package io.correcta.workspace.models.response
 import io.correcta.workspace.entities.AssessmentQuestionDraftRevision
 
 data class SavedDraftRevisionResponse(
-    val id: String,
-    val workspaceId: String,
-    val revision: Int,
-    val createdAt: String,
+  val id: String,
+  val workspaceId: String,
+  val revision: Int,
+  val createdAt: String,
 ) {
 
-    companion object {
+  companion object {
 
-        fun fromDraftRevision(revision: AssessmentQuestionDraftRevision): SavedDraftRevisionResponse {
-
-            return SavedDraftRevisionResponse(
-                id = revision.id!!,
-                workspaceId = revision.workspace.id!!,
-                revision = revision.revision,
-                createdAt = revision.createdAt!!.toString()
-            )
-        }
-    }
+    fun fromDraftRevision(revision: AssessmentQuestionDraftRevision): SavedDraftRevisionResponse = SavedDraftRevisionResponse(
+      id = revision.id!!,
+      workspaceId = revision.workspace.id!!,
+      revision = revision.revision,
+      createdAt = revision.createdAt!!.toString(),
+    )
+  }
 }

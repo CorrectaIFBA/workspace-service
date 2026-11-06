@@ -8,8 +8,7 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 class WorkspaceServiceApplicationTests {
 
-    @Test
-    fun contextLoads() {
-    }
-
+  @Test
+  fun contextLoads() {
+  }
 }

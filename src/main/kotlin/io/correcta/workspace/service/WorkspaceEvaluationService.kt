@@ -10,37 +10,37 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class WorkspaceEvaluationService(
-    val workspaceReader: WorkspaceReader,
-    val submissionWindowGuard: SubmissionWindowGuard,
-    val outbox: Outbox,
+  val workspaceReader: WorkspaceReader,
+  val submissionWindowGuard: SubmissionWindowGuard,
+  val outbox: Outbox,
 ) {
 
-    @Transactional
-    fun runPartialWorkspaceEvaluation(profileId: String, workspaceId: String) {
-        val workspace = workspaceReader.getOwned(workspaceId, profileId)
+  @Transactional
+  fun runPartialWorkspaceEvaluation(profileId: String, workspaceId: String) {
+    val workspace = workspaceReader.getOwned(workspaceId, profileId)
 
-        submissionWindowGuard.assertAcceptsSubmissions(workspace.assessmentId, profileId)
+    submissionWindowGuard.assertAcceptsSubmissions(workspace.assessmentId, profileId)
 
-        val latestDraft = workspaceReader.latestDraft(workspace)
+    val latestDraft = workspaceReader.latestDraft(workspace)
 
-        if (latestDraft == null) {
-            log.info("Skipping workspace $workspaceId: no draft to run.")
+    if (latestDraft == null) {
+      log.info("Skipping workspace $workspaceId: no draft to run.")
 
-            return
-        }
-
-        triggerEvaluationOrchestrator(PartialEvaluationRequest(draftRevision = latestDraft, workspace = workspace))
+      return
     }
 
-    fun triggerEvaluationOrchestrator(request: EvaluationRequest) {
-        outbox.enqueue(
-            EvaluationMessaging.EXCHANGE,
-            EvaluationMessaging.TRIGGER_EVALUATION_KEY,
-            request.toPayload()
-        )
-    }
+    triggerEvaluationOrchestrator(PartialEvaluationRequest(draftRevision = latestDraft, workspace = workspace))
+  }
 
-    companion object {
-        private val log = LoggerFactory.getLogger(WorkspaceEvaluationService::class.java)
-    }
+  fun triggerEvaluationOrchestrator(request: EvaluationRequest) {
+    outbox.enqueue(
+      EvaluationMessaging.EXCHANGE,
+      EvaluationMessaging.TRIGGER_EVALUATION_KEY,
+      request.toPayload(),
+    )
+  }
+
+  companion object {
+    private val log = LoggerFactory.getLogger(WorkspaceEvaluationService::class.java)
+  }
 }

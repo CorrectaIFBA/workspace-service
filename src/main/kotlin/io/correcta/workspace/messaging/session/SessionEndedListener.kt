@@ -11,21 +11,24 @@ import org.springframework.stereotype.Component
 
 @Component
 class SessionEndedListener(
-    val submissionService: SubmissionService,
-    val objectMapper: ObjectMapper,
+  val submissionService: SubmissionService,
+  val objectMapper: ObjectMapper,
 ) {
 
-    private val log: Logger = LoggerFactory.getLogger(SessionEndedListener::class.java)
+  private val log: Logger = LoggerFactory.getLogger(SessionEndedListener::class.java)
 
-    @RabbitListener(queues = [SessionMessaging.SESSION_ENDED_QUEUE])
-    fun onSessionEnded(message: Message) {
-        val ended = objectMapper.readValue<SessionEndedMessage>(message.body)
+  @RabbitListener(queues = [SessionMessaging.SESSION_ENDED_QUEUE])
+  fun onSessionEnded(message: Message) {
+    val ended = objectMapper.readValue<SessionEndedMessage>(message.body)
 
-        log.info(
-            "Session {} ended ({}); submitting the drafts of student {} in assessment {}.",
-            ended.sessionId, ended.reason, ended.studentProfileId, ended.assessmentId
-        )
+    log.info(
+      "Session {} ended ({}); submitting the drafts of student {} in assessment {}.",
+      ended.sessionId,
+      ended.reason,
+      ended.studentProfileId,
+      ended.assessmentId,
+    )
 
-        submissionService.submitAllWorkspacesForStudent(ended.assessmentId, ended.studentProfileId)
-    }
+    submissionService.submitAllWorkspacesForStudent(ended.assessmentId, ended.studentProfileId)
+  }
 }

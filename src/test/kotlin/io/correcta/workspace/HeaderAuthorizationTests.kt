@@ -12,11 +12,11 @@ import org.springframework.test.web.servlet.get
 @SpringBootTest
 @AutoConfigureMockMvc
 class HeaderAuthorizationTests(
-    @Autowired val mockMvc: MockMvc
+  @Autowired val mockMvc: MockMvc,
 ) {
 
-    @Test
-    fun `rejects requests without identity headers`() {
-        mockMvc.get("/workspaces/assessment/a1/questions/q1").andExpect { status { isUnauthorized() } }
-    }
+  @Test
+  fun `rejects requests without identity headers`() {
+    mockMvc.get("/workspaces/assessment/a1/questions/q1").andExpect { status { isUnauthorized() } }
+  }
 }

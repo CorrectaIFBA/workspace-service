@@ -16,41 +16,37 @@ import org.springframework.web.filter.OncePerRequestFilter
  */
 class HeaderAuthenticationFilter : OncePerRequestFilter() {
 
-    override fun doFilterInternal(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        filterChain: FilterChain
-    ) {
-        val profileId = request.readHeader(IdentityHeaders.PROFILE_ID)
+  override fun doFilterInternal(
+    request: HttpServletRequest,
+    response: HttpServletResponse,
+    filterChain: FilterChain,
+  ) {
+    val profileId = request.readHeader(IdentityHeaders.PROFILE_ID)
 
-        if (profileId != null) {
-            val traits = request.readHeader(IdentityHeaders.TRAITS)
-                ?.split(",")
-                ?.map { it.trim() }
-                ?.filter { it.isNotEmpty() }
-                .orEmpty()
+    if (profileId != null) {
+      val traits = request.readHeader(IdentityHeaders.TRAITS)
+        ?.split(",")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        .orEmpty()
 
-            val principal = ProfilePrincipal(
-                profileId = profileId,
-                personId = request.readHeader(IdentityHeaders.PERSON_ID),
-                profileType = request.readHeader(IdentityHeaders.PROFILE_TYPE),
-                login = request.readHeader(IdentityHeaders.LOGIN),
-                email = request.readHeader(IdentityHeaders.EMAIL),
-                traits = traits
-            )
+      val principal = ProfilePrincipal(
+        profileId = profileId,
+        personId = request.readHeader(IdentityHeaders.PERSON_ID),
+        profileType = request.readHeader(IdentityHeaders.PROFILE_TYPE),
+        login = request.readHeader(IdentityHeaders.LOGIN),
+        email = request.readHeader(IdentityHeaders.EMAIL),
+        traits = traits,
+      )
 
-            SecurityContextHolder.getContext().authentication =
-                UsernamePasswordAuthenticationToken(principal, null, traits.map(::SimpleGrantedAuthority))
-        }
-
-        filterChain.doFilter(request, response)
+      SecurityContextHolder.getContext().authentication =
+        UsernamePasswordAuthenticationToken(principal, null, traits.map(::SimpleGrantedAuthority))
     }
 
-    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
-        return request.method.equals("OPTIONS", ignoreCase = true)
-    }
+    filterChain.doFilter(request, response)
+  }
 
-    private fun HttpServletRequest.readHeader(name: String): String? {
-        return getHeader(name)?.trim()?.takeIf { it.isNotEmpty() }
-    }
+  override fun shouldNotFilter(request: HttpServletRequest): Boolean = request.method.equals("OPTIONS", ignoreCase = true)
+
+  private fun HttpServletRequest.readHeader(name: String): String? = getHeader(name)?.trim()?.takeIf { it.isNotEmpty() }
 }
