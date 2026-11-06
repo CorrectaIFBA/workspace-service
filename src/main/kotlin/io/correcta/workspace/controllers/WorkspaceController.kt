@@ -44,8 +44,7 @@ interface WorkspaceController {
     @IsProfileType("STUDENT")
     fun runWorkspace(
         @PathVariable workspaceId: String,
-        @RequestHeader("If-Match") ifMatch: String,
-    ): GetWorkspaceResponse // idk, maybe return stuff related to the actual run
+    )
 
     @PostMapping("/assessment/{assessmentId}/submissions")
     @IsLoggedUser

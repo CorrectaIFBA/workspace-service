@@ -1,4 +1,4 @@
-package io.correcta.workspace.messaging
+package io.correcta.workspace.messaging.outbox
 
 import org.springframework.data.jpa.repository.JpaRepository
 

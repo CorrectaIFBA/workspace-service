@@ -1,4 +1,4 @@
-package io.correcta.workspace.messaging
+package io.correcta.workspace.messaging.outbox
 
 import java.sql.Timestamp
 import java.time.Clock

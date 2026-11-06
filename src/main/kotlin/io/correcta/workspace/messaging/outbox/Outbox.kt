@@ -1,4 +1,4 @@
-package io.correcta.workspace.messaging
+package io.correcta.workspace.messaging.outbox
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.time.Clock

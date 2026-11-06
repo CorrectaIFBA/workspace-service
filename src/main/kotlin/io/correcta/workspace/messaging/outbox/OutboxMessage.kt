@@ -1,4 +1,4 @@
-package io.correcta.workspace.messaging
+package io.correcta.workspace.messaging.outbox
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

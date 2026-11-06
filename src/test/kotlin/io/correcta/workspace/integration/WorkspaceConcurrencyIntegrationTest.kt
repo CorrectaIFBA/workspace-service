@@ -2,8 +2,8 @@ package io.correcta.workspace.integration
 
 import com.jayway.jsonpath.JsonPath
 import io.correcta.workspace.clients.AssessmentClient
-import io.correcta.workspace.messaging.OutboxMessageRepository
-import io.correcta.workspace.messaging.OutboxRelay
+import io.correcta.workspace.messaging.outbox.OutboxMessageRepository
+import io.correcta.workspace.messaging.outbox.OutboxRelay
 import io.correcta.workspace.models.response.clients.AssessmentSessionStatusResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

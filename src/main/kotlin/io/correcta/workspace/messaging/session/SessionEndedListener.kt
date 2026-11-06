@@ -2,7 +2,7 @@ package io.correcta.workspace.messaging.session
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.correcta.workspace.service.WorkspaceService
+import io.correcta.workspace.service.SubmissionService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class SessionEndedListener(
-    val workspaceService: WorkspaceService,
+    val submissionService: SubmissionService,
     val objectMapper: ObjectMapper,
 ) {
 
@@ -26,6 +26,6 @@ class SessionEndedListener(
             ended.sessionId, ended.reason, ended.studentProfileId, ended.assessmentId
         )
 
-        workspaceService.submitAllWorkspacesForStudent(ended.assessmentId, ended.studentProfileId)
+        submissionService.submitAllWorkspacesForStudent(ended.assessmentId, ended.studentProfileId)
     }
 }
