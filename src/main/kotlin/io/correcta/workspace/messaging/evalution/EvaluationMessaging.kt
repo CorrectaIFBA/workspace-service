@@ -9,10 +9,10 @@ import org.springframework.amqp.core.TopicExchange
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/*
- * Evaluation events of evaluation-orchestrator. Every service that takes part
- * declares the whole topology (declarations are idempotent), so a message
- * published before the other side ever started is queued, not dropped.
+/**
+ * RabbitMQ names for the evaluation events of evaluation-orchestrator. Every service that takes part
+ * declares the whole topology (declarations are idempotent), so a message published before the other
+ * side ever started is queued, not dropped.
  */
 object EvaluationMessaging {
   const val EXCHANGE = "correcta.evaluations"
@@ -23,6 +23,7 @@ object EvaluationMessaging {
   const val TRIGGER_EVALUATION_QUEUE = "evaluation-orchestrator.evaluation-trigger"
 }
 
+/** Declares the evaluation exchange, its queues and their dead-letter queues (`<queue>.dlq`). */
 @Configuration
 class EvaluationMessagingConfig {
 

@@ -7,15 +7,12 @@ import io.correcta.workspace.exceptions.BadRequestException
 import io.correcta.workspace.exceptions.ForbiddenException
 import io.correcta.workspace.exceptions.NotFoundException
 import io.correcta.workspace.exceptions.PreconditionFailedException
-import io.correcta.workspace.messaging.outbox.Outbox
 import io.correcta.workspace.models.request.SaveDraftRevisionRequest
 import io.correcta.workspace.repositories.AssessmentQuestionDraftRevisionRepository
-import io.correcta.workspace.repositories.AssessmentQuestionSubmissionRepository
 import io.correcta.workspace.repositories.AssessmentQuestionWorkspaceRepository
 import io.correcta.workspace.service.Fixtures.ASSESSMENT_ID
 import io.correcta.workspace.service.Fixtures.PROFILE_ID
 import io.correcta.workspace.service.Fixtures.WORKSPACE_ID
-import io.correcta.workspace.service.Fixtures.draft
 import io.correcta.workspace.service.Fixtures.session
 import io.correcta.workspace.service.Fixtures.workspace
 import org.junit.jupiter.api.BeforeEach
@@ -27,10 +24,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
-import org.springframework.transaction.PlatformTransactionManager
-import java.time.Clock
 import java.time.Instant
-import java.time.ZoneOffset
 import java.util.Optional
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -39,11 +33,7 @@ class DraftServiceTest {
 
   private val assessmentClient = mock(AssessmentClient::class.java)
   private val draftRepository = mock(AssessmentQuestionDraftRevisionRepository::class.java)
-  private val submissionRepository = mock(AssessmentQuestionSubmissionRepository::class.java)
   private val workspaceRepository = mock(AssessmentQuestionWorkspaceRepository::class.java)
-  private val transactionManager = mock(PlatformTransactionManager::class.java)
-  private val outbox = mock(Outbox::class.java)
-  private val clock = Clock.fixed(Instant.parse("2030-03-10T13:00:00Z"), ZoneOffset.UTC)
 
   private val reader = WorkspaceReader(workspaceRepository, draftRepository)
   private val guard = SubmissionWindowGuard(assessmentClient)
@@ -59,8 +49,6 @@ class DraftServiceTest {
       }
     }
   }
-
-  // ---------------------------------------------------------------- createDraftForWorkspace
 
   @Test
   fun `createDraft saves revision 1 when If-Match is 0 and no draft exists`() {
@@ -150,8 +138,6 @@ class DraftServiceTest {
       drafts.createDraftForWorkspace(PROFILE_ID, WORKSPACE_ID, draftRequest(), "\"0\"")
     }
   }
-
-  // ---------------------------------------------------------------- helpers
 
   /** Stubs the lookups used when the workspace is addressed by id. */
   private fun givenWorkspace(revision: Int): AssessmentQuestionWorkspace {

@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableScheduling
 import java.time.Clock
 
-/* Scheduling runs the outbox relay; the clock stamps outbox rows. */
+/** Enables scheduling for the outbox relay and exposes the UTC [Clock] used to stamp outbox rows. */
 @Configuration
 @EnableScheduling
 class MessagingConfig {

@@ -13,7 +13,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authorization.AuthorizationDeniedException
-import org.springframework.validation.FieldError
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -22,6 +21,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.resource.NoResourceFoundException
 
+/**
+ * Translates exceptions into JSON error bodies with Portuguese messages for the client.
+ * Domain exceptions keep their own message; framework exceptions get a fixed one.
+ */
 @RestControllerAdvice
 class CustomExceptionHandler {
 
@@ -30,15 +33,13 @@ class CustomExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException::class)
   fun handleMethodArgumentNotValidException(exception: MethodArgumentNotValidException): ResponseEntity<ValidationErrorResponse> {
     val fieldErrors = exception.bindingResult.fieldErrors
-    val errorList = fieldErrors.stream().map<String?> { obj: FieldError? -> obj!!.defaultMessage }.toList()
-
     val validationErrorResponse =
       ValidationErrorResponse(
         message = "A validação dos parâmetros da requisição falhou.",
         errors = fieldErrors.associate { it.field to (it.defaultMessage ?: "Valor inválido") },
       )
 
-    log.warn("Validation errors : {} ; Parameters : {}", errorList, exception.bindingResult.target)
+    log.warn("Validation errors : {} ; Parameters : {}", validationErrorResponse.errors, exception.bindingResult.target)
 
     return ResponseEntity.status(400)
       .body(validationErrorResponse)
@@ -47,17 +48,17 @@ class CustomExceptionHandler {
   @ExceptionHandler(BadRequestException::class)
   fun handleBadRequestException(exception: BadRequestException): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(400)
-    .body(ErrorResponse(exception.message ?: "A requisição não pôde ser compreendida ou não possui os parâmetros obrigatórios."))
+    .body(ErrorResponse(exception.message))
 
   @ExceptionHandler(UnauthorizedException::class)
   fun handleUnauthorizedException(exception: UnauthorizedException): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(401)
-    .body(ErrorResponse(exception.message ?: "É necessário estar autenticado para acessar este recurso."))
+    .body(ErrorResponse(exception.message))
 
   @ExceptionHandler(ForbiddenException::class)
   fun handleForbiddenException(exception: ForbiddenException): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(403)
-    .body(ErrorResponse(exception.message ?: "Você não tem permissão para acessar este recurso."))
+    .body(ErrorResponse(exception.message))
 
   @ExceptionHandler(AuthorizationDeniedException::class)
   fun handleAuthorizationDeniedException(): ResponseEntity<ErrorResponse> = ResponseEntity
@@ -76,7 +77,7 @@ class CustomExceptionHandler {
   @ExceptionHandler(NotFoundException::class)
   fun handleNotFoundException(exception: NotFoundException): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(404)
-    .body(ErrorResponse(exception.message ?: "O recurso solicitado não foi encontrado."))
+    .body(ErrorResponse(exception.message))
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
   fun handleMethodNotSupportedException(exception: HttpRequestMethodNotSupportedException): ResponseEntity<ErrorResponse> {
@@ -95,7 +96,7 @@ class CustomExceptionHandler {
   @ExceptionHandler(ConflictException::class)
   fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(409)
-    .body(ErrorResponse(exception.message ?: "A requisição não pôde ser concluída devido a um conflito com o estado atual do recurso."))
+    .body(ErrorResponse(exception.message))
 
   @ExceptionHandler(MissingRequestHeaderException::class)
   fun handleMissingRequestHeaderException(exception: MissingRequestHeaderException): ResponseEntity<ErrorResponse> {
@@ -114,7 +115,7 @@ class CustomExceptionHandler {
   @ExceptionHandler(PreconditionFailedException::class)
   fun handlePreconditionFailedException(exception: PreconditionFailedException): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(412)
-    .body(ErrorResponse(exception.message ?: "A requisição não pôde ser concluída devido a uma falha na condição prévia."))
+    .body(ErrorResponse(exception.message))
 
   @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
   fun handleMediaTypeNotSupportedException(exception: HttpMediaTypeNotSupportedException): ResponseEntity<ErrorResponse> = ResponseEntity

@@ -19,6 +19,7 @@ class WorkspaceService(
   val submissionWindowGuard: SubmissionWindowGuard,
 ) {
 
+  /** Inserts a new workspace; the unique index rejects a duplicate. */
   private fun createWorkspace(profileId: String, request: CreateWorkspaceRequest): AssessmentQuestionWorkspace {
     log.info("Creating workspace for student $profileId, assessment ${request.assessmentId}, question ${request.questionId}")
 

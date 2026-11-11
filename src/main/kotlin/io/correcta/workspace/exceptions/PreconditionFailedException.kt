@@ -3,5 +3,8 @@ package io.correcta.workspace.exceptions
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus
 
+/** Thrown when a conditional request (`If-Match`) no longer matches the resource; mapped to HTTP 412. */
 @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
-class PreconditionFailedException(message: String = "A requisição não pôde ser concluída devido a uma falha na condição prévia.") : RuntimeException(message)
+class PreconditionFailedException(
+  override val message: String = "A requisição não pôde ser concluída devido a uma falha na condição prévia.",
+) : RuntimeException(message)

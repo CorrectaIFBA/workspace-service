@@ -72,9 +72,7 @@ class DraftService(
     return PreconditionFailedException("O rascunho foi atualizado por outra sessão. Expected: $expected, current: $current.")
   }
 
-    /*
-     * ETag format: quoted revision number, e.g. "3". No draft yet = "0".
-     */
+  /** Parses an ETag holding a quoted revision number, for example `"3"`. A workspace without drafts is `"0"`. */
   private fun parseRevisionFromEtag(ifMatch: String): Int {
     val digits = REVISION_ETAG.matchEntire(ifMatch)?.groupValues?.get(1)
 

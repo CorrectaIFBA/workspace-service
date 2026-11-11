@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 @Tag(name = "Workspace", description = "Student code workspaces.")
 interface WorkspaceController {
 
+  /** Returns the student's workspace for a question, creating it on first access. The ETag is the current revision. */
   @GetMapping("/assessment/{assessmentId}/questions/{questionId}")
   @IsLoggedUser
   @IsProfileType("STUDENT")
@@ -33,6 +34,7 @@ interface WorkspaceController {
     @PathVariable questionId: String,
   ): ResponseEntity<GetWorkspaceResponse>
 
+  /** Saves a new draft revision. `If-Match` must hold the current ETag; the response carries the new one. */
   @PutMapping("/{workspaceId}/drafts")
   @IsLoggedUser
   @IsProfileType("STUDENT")
@@ -42,6 +44,7 @@ interface WorkspaceController {
     @RequestHeader("If-Match") ifMatch: String,
   ): ResponseEntity<SavedDraftRevisionResponse>
 
+  /** Requests a partial evaluation of the latest draft. No submission is created. */
   @PostMapping("/{workspaceId}/runs")
   @IsLoggedUser
   @IsProfileType("STUDENT")
@@ -49,6 +52,7 @@ interface WorkspaceController {
     @PathVariable workspaceId: String,
   )
 
+  /** Delivers the assessment: submits the latest draft of every workspace and closes the session. */
   @PostMapping("/assessment/{assessmentId}/submissions")
   @IsLoggedUser
   @IsProfileType("STUDENT")

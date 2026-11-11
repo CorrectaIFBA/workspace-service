@@ -2,6 +2,7 @@ package io.correcta.workspace.models.response
 
 import io.correcta.workspace.entities.AssessmentQuestionDraftRevision
 
+/** A draft revision with its source code. */
 data class GetDraftRevisionResponse(
   val id: String,
   val workspaceId: String,
@@ -13,6 +14,7 @@ data class GetDraftRevisionResponse(
 
   companion object {
 
+    /** Maps [revision] to a response, or returns null when there is no draft. */
     fun fromDraftRevision(revision: AssessmentQuestionDraftRevision?): GetDraftRevisionResponse? {
       if (revision == null) return null
 

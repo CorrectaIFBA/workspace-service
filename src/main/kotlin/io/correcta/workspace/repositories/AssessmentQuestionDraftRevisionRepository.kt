@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
 import java.util.Optional
 
+/** Persistence of [AssessmentQuestionDraftRevision]. */
 @Repository
 interface AssessmentQuestionDraftRevisionRepository :
   JpaRepository<AssessmentQuestionDraftRevision, String>,

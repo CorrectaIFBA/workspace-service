@@ -56,8 +56,6 @@ class WorkspaceConcurrencyIntegrationTest(
       .thenReturn(AssessmentSessionStatusResponse("s1", "IN_PROGRESS", null, null, acceptsSubmissions = true, late = false))
   }
 
-  // ------------------------------------------------------------ schema
-
   @Test
   fun `migrations produce a schema the entities validate against`() {
     // Context startup (ddl-auto=validate) already proves it; make the check explicit on the V3 shape.
@@ -71,8 +69,6 @@ class WorkspaceConcurrencyIntegrationTest(
     assertEquals(false, "language" in columns)
     assertEquals(false, "draft_revision" in columns)
   }
-
-  // ------------------------------------------------------------ drafts
 
   @Test
   fun `concurrent drafts with the same If-Match let exactly one win`() {
@@ -97,8 +93,6 @@ class WorkspaceConcurrencyIntegrationTest(
       jdbc.queryForList("select revision from assessment_question_draft_revisions where workspace_id = ? order by revision", Int::class.java, workspaceId),
     )
   }
-
-  // ------------------------------------------------------------ submissions
 
   @Test
   fun `delivering again after a new draft supersedes the previous submission`() {
@@ -174,8 +168,6 @@ class WorkspaceConcurrencyIntegrationTest(
       count("select count(*) from assessment_question_workspaces where assessment_id = ? and question_id = 'q-race'", assessmentId),
     )
   }
-
-  // ------------------------------------------------------------ helpers
 
   private fun createWorkspace(questionId: String): String {
     val body = mockMvc.get("/workspaces/assessment/$assessmentId/questions/$questionId") {

@@ -3,6 +3,7 @@ package io.correcta.workspace.repositories.specifications
 import io.correcta.workspace.entities.AssessmentQuestionWorkspace
 import org.springframework.data.jpa.domain.Specification
 
+/** Optional filters for workspaces. A null argument adds no condition. */
 object AssessmentQuestionWorkspaceSpecification {
 
   fun hasStudentProfileId(studentProfileId: String?): Specification<AssessmentQuestionWorkspace>? = studentProfileId?.let { value ->
@@ -17,6 +18,7 @@ object AssessmentQuestionWorkspaceSpecification {
     Specification { root, _, cb -> cb.equal(root.get<String>("questionId"), value) }
   }
 
+  /** Combines every non-null filter with AND. */
   fun filter(
     studentProfileId: String? = null,
     assessmentId: String? = null,

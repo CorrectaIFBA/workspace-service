@@ -5,6 +5,7 @@ import io.correcta.workspace.entities.AssessmentQuestionSubmission
 import io.correcta.workspace.entities.AssessmentQuestionSubmissionStatus
 import io.correcta.workspace.entities.AssessmentQuestionWorkspace
 import io.correcta.workspace.models.response.clients.AssessmentSessionStatusResponse
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers
 import java.time.Instant
 
@@ -61,4 +62,11 @@ internal fun <T> anyK(): T = anyArg()
 internal fun anyStr(): String {
   ArgumentMatchers.anyString()
   return ""
+}
+
+/** [ArgumentCaptor.capture] usable for non-null Kotlin parameters. */
+@Suppress("UNCHECKED_CAST")
+internal fun <T> ArgumentCaptor<T>.captureArg(): T {
+  capture()
+  return null as T
 }

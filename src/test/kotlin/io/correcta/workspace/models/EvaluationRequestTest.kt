@@ -21,6 +21,7 @@ class EvaluationRequestTest {
 
     assertEquals(EvaluationType.FINAL, payload.type)
     assertEquals(submission.id, payload.submissionId)
+    assertEquals(2, payload.revision)
     assertEquals("print(1)", payload.sourceCode)
     assertEquals("C", payload.language)
     assertEquals(workspace.id, payload.workspaceId)
@@ -35,6 +36,7 @@ class EvaluationRequestTest {
 
     assertEquals(EvaluationType.PARTIAL, payload.type)
     assertNull(payload.submissionId)
+    assertEquals(2, payload.revision)
     assertEquals("print(1)", payload.sourceCode)
     assertEquals("C", payload.language)
     assertEquals(workspace.id, payload.workspaceId)

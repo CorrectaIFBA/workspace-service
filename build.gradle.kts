@@ -5,6 +5,7 @@ plugins {
   alias(libs.plugins.spring.boot)
   alias(libs.plugins.spring.dependency.management)
   alias(libs.plugins.spotless)
+  jacoco
 }
 
 group = "io.correcta"
@@ -88,6 +89,42 @@ spotless {
 
 tasks.withType<Test> {
   useJUnitPlatform()
+}
+
+jacoco {
+  toolVersion = "0.8.13"
+}
+
+tasks.jacocoTestReport {
+  dependsOn(tasks.test)
+  reports {
+    xml.required = true
+    html.required = true
+  }
+}
+
+tasks.jacocoTestCoverageVerification {
+  dependsOn(tasks.jacocoTestReport)
+  violationRules {
+    rule {
+      limit {
+        counter = "LINE"
+        minimum = "1.0".toBigDecimal()
+      }
+      limit {
+        counter = "BRANCH"
+        minimum = "1.0".toBigDecimal()
+      }
+    }
+  }
+}
+
+tasks.test {
+  finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.check {
+  dependsOn(tasks.jacocoTestCoverageVerification)
 }
 
 val installGitHooks by tasks.registering(Exec::class) {

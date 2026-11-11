@@ -9,6 +9,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 
+/** Stateless security chain that authenticates requests from the gateway identity headers. */
 @Configuration
 @EnableWebSecurity
 class SecurityConfig {

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock
 import org.springframework.stereotype.Repository
 import java.util.Optional
 
+/** Persistence of [AssessmentQuestionSubmission]. The `PESSIMISTIC_WRITE` queries lock the rows they read. */
 @Repository
 interface AssessmentQuestionSubmissionRepository :
   JpaRepository<AssessmentQuestionSubmission, String>,

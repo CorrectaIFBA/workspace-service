@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.util.Optional
 
+/** Persistence of [AssessmentQuestionWorkspace]. */
 @Repository
 interface AssessmentQuestionWorkspaceRepository :
   JpaRepository<AssessmentQuestionWorkspace, String>,
@@ -33,6 +34,10 @@ interface AssessmentQuestionWorkspaceRepository :
   @Query("select w from AssessmentQuestionWorkspace w where w.id = :id")
   fun findByIdForUpdate(id: String): Optional<AssessmentQuestionWorkspace>
 
+  /**
+   * Compare-and-swap of the current revision: sets [currentRevision] only while the row still holds [expectedRevision].
+   * Returns the number of updated rows, so 0 means another request saved first.
+   */
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query(
     """

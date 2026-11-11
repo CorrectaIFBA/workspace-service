@@ -9,18 +9,19 @@ import org.springframework.amqp.core.TopicExchange
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/*
- * Assessment sessions between assessment-service and workspace-service.
- * Both services declare the whole topology (declarations are idempotent),
- * so a message published before the other side ever started is queued,
- * not dropped as unroutable.
+/**
+ * RabbitMQ names for assessment sessions, shared by assessment-service and workspace-service.
+ * Both services declare the whole topology (declarations are idempotent), so a message published
+ * before the other side ever started is queued, not dropped as unroutable.
  *
+ * ```
  *   session.ended      assessment-service -> workspace-service
  *                      The session finished without the student delivering it
  *                      (deadline, archive, faculty close): submit the latest drafts.
  *   session.delivered  workspace-service -> assessment-service
  *                      The student delivered and every workspace is submitted:
  *                      mark the session SUBMITTED.
+ * ```
  *
  * A message that keeps failing after the listener's retries goes to <queue>.dlq.
  */
@@ -35,22 +36,24 @@ object SessionMessaging {
   const val SESSION_DELIVERED_QUEUE = "assessment-service.session-delivered"
 }
 
+/** Payload of `session.ended`. [reason] is EXPIRED, CLOSED_BY_ARCHIVE or CLOSED_BY_FACULTY. */
 data class SessionEndedMessage(
   val sessionId: String,
   val assessmentId: String,
   val studentProfileId: String,
   val state: String,
-  /* EXPIRED, CLOSED_BY_ARCHIVE or CLOSED_BY_FACULTY. */
   val reason: String,
   val endedAt: String,
 )
 
+/** Payload of `session.delivered`. */
 data class SessionDeliveredMessage(
   val assessmentId: String,
   val studentProfileId: String,
   val deliveredAt: String,
 )
 
+/** Declares the session exchange, its queues and their dead-letter queues (`<queue>.dlq`). */
 @Configuration
 class SessionMessagingConfig {
 

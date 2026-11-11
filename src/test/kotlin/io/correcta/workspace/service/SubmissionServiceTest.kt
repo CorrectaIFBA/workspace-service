@@ -75,8 +75,6 @@ class SubmissionServiceTest {
     }
   }
 
-  // ---------------------------------------------------------------- submission numbering (shared by every submit)
-
   @Test
   fun `submit creates submission number 1 for the first submission`() {
     val workspace = workspace(WORKSPACE_ID, revision = 2)
@@ -137,7 +135,29 @@ class SubmissionServiceTest {
     assertEquals(AssessmentQuestionSubmissionStatus.ACTIVE, active.status)
   }
 
-  // ---------------------------------------------------------------- submit all
+  @Test
+  fun `submit after a SUPERSEDED submission of the same draft creates a new ACTIVE one`() {
+    val workspace = workspace(WORKSPACE_ID, revision = 2)
+    givenStudentWorkspaces(workspace)
+    givenDraft(workspace, 2)
+    val superseded = submission(workspace, number = 1, revision = 2, status = AssessmentQuestionSubmissionStatus.SUPERSEDED)
+    `when`(submissionRepository.findByWorkspaceIdOrderBySubmissionNumberDesc(WORKSPACE_ID)).thenReturn(listOf(superseded))
+
+    submissions.submitAllWorkspacesForStudent(ASSESSMENT_ID, PROFILE_ID)
+
+    assertEquals(2, savedSubmissions.single().submissionNumber)
+  }
+
+  @Test
+  fun `submit reports a workspace deleted between listing and submitting`() {
+    val workspace = workspace(WORKSPACE_ID, revision = 1)
+    givenStudentWorkspaces(workspace)
+    `when`(workspaceRepository.findById(WORKSPACE_ID)).thenReturn(Optional.empty())
+
+    assertFailsWith<InternalServerErrorException> { submissions.submitAllWorkspacesForStudent(ASSESSMENT_ID, PROFILE_ID) }
+
+    assertTrue(savedSubmissions.isEmpty())
+  }
 
   @Test
   fun `submitAll submits the latest draft of each workspace and skips workspaces without drafts`() {
@@ -228,8 +248,6 @@ class SubmissionServiceTest {
     assertTrue(savedSubmissions.isEmpty())
     verify(outbox, times(2)).enqueue(anyStr(), anyStr(), anyK())
   }
-
-  // ---------------------------------------------------------------- helpers
 
   private fun givenStudentWorkspaces(vararg workspaces: AssessmentQuestionWorkspace) {
     `when`(workspaceRepository.findByStudentProfileIdAndAssessmentId(PROFILE_ID, ASSESSMENT_ID)).thenReturn(workspaces.toList())

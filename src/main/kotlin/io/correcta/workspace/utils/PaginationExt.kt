@@ -7,8 +7,10 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 
+/** Conversions between [PaginationRequest], Spring Data paging and [PagedResponse]. */
 object PaginationExt {
 
+  /** Builds a [PageRequest]. Throws 400 when [PaginationRequest.sortBy] is not in [allowedSortFields]. */
   fun PaginationRequest.toPageRequest(allowedSortFields: Set<String>): PageRequest {
     if (sortBy !in allowedSortFields) {
       throw BadRequestException(
@@ -19,6 +21,7 @@ object PaginationExt {
     return PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDirection), sortBy))
   }
 
+  /** Maps the page content with [mapper] and copies the paging metadata. */
   fun <E, T> Page<E>.toPagedResponse(request: PaginationRequest, mapper: (E) -> T): PagedResponse<T> = PagedResponse(
     content = content.map(mapper),
     page = number,

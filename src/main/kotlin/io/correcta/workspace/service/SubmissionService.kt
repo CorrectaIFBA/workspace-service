@@ -60,10 +60,11 @@ class SubmissionService(
     }
   }
 
-    /*
-     * Also used by system callers (e.g. the session-expiry queue listener).
-     * It does NOT check the deadline: the caller is acting precisely because the session ended.
-     */
+  /**
+   * Submits the latest draft of every workspace of a student in an assessment, one transaction per workspace.
+   * Does NOT check the deadline: system callers (the session-ended listener) act because the session ended.
+   * Throws 500 after trying every workspace if any of them failed.
+   */
   fun submitAllWorkspacesForStudent(assessmentId: String, studentProfileId: String) {
     val workspaces = assessmentQuestionWorkspaceRepository
       .findByStudentProfileIdAndAssessmentId(studentProfileId, assessmentId)

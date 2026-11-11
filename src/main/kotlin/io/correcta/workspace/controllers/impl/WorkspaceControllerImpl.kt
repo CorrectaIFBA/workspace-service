@@ -49,6 +49,10 @@ class WorkspaceControllerImpl(
     submissionService.submitAllWorkspacesForAssessment(profileId(), assessmentId)
   }
 
-  private fun profileId(): String = scopeEvaluator.currentProfile()?.profileId
-    ?: throw InternalServerErrorException("Falha ao recuperar o principal da autenticação")
+  private fun profileId(): String {
+    val profile = scopeEvaluator.currentProfile()
+      ?: throw InternalServerErrorException("Falha ao recuperar o principal da autenticação")
+
+    return profile.profileId
+  }
 }

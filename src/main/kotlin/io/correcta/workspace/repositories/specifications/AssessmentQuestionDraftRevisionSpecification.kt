@@ -3,6 +3,7 @@ package io.correcta.workspace.repositories.specifications
 import io.correcta.workspace.entities.AssessmentQuestionDraftRevision
 import org.springframework.data.jpa.domain.Specification
 
+/** Optional filters for draft revisions. A null or blank argument adds no condition. */
 object AssessmentQuestionDraftRevisionSpecification {
 
   fun hasWorkspaceId(workspaceId: String?): Specification<AssessmentQuestionDraftRevision>? = workspaceId?.let { value ->
@@ -17,6 +18,7 @@ object AssessmentQuestionDraftRevisionSpecification {
     Specification { root, _, cb -> cb.equal(cb.lower(root.get("language")), value.trim().lowercase()) }
   }
 
+  /** Combines every non-null filter with AND. */
   fun filter(
     workspaceId: String? = null,
     revision: Int? = null,

@@ -3,9 +3,7 @@ package io.correcta.workspace.service
 import io.correcta.workspace.clients.AssessmentClient
 import io.correcta.workspace.entities.AssessmentQuestionDraftRevision
 import io.correcta.workspace.entities.AssessmentQuestionWorkspace
-import io.correcta.workspace.messaging.outbox.Outbox
 import io.correcta.workspace.repositories.AssessmentQuestionDraftRevisionRepository
-import io.correcta.workspace.repositories.AssessmentQuestionSubmissionRepository
 import io.correcta.workspace.repositories.AssessmentQuestionWorkspaceRepository
 import io.correcta.workspace.service.Fixtures.ASSESSMENT_ID
 import io.correcta.workspace.service.Fixtures.PROFILE_ID
@@ -22,23 +20,17 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.dao.DataIntegrityViolationException
-import org.springframework.transaction.PlatformTransactionManager
-import java.time.Clock
 import java.time.Instant
-import java.time.ZoneOffset
 import java.util.Optional
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class WorkspaceServiceTest {
 
   private val assessmentClient = mock(AssessmentClient::class.java)
   private val draftRepository = mock(AssessmentQuestionDraftRevisionRepository::class.java)
-  private val submissionRepository = mock(AssessmentQuestionSubmissionRepository::class.java)
   private val workspaceRepository = mock(AssessmentQuestionWorkspaceRepository::class.java)
-  private val transactionManager = mock(PlatformTransactionManager::class.java)
-  private val outbox = mock(Outbox::class.java)
-  private val clock = Clock.fixed(Instant.parse("2030-03-10T13:00:00Z"), ZoneOffset.UTC)
 
   private val reader = WorkspaceReader(workspaceRepository, draftRepository)
   private val guard = SubmissionWindowGuard(assessmentClient)
@@ -48,8 +40,6 @@ class WorkspaceServiceTest {
   fun setUp() {
     `when`(assessmentClient.getSessionSubmissionStatus(ASSESSMENT_ID, PROFILE_ID)).thenReturn(session())
   }
-
-  // ---------------------------------------------------------------- getOrCreateWorkspaceForAssessmentQuestion
 
   @Test
   fun `getOrCreate returns the existing workspace without creating one`() {
@@ -107,7 +97,16 @@ class WorkspaceServiceTest {
     assertEquals(WORKSPACE_ID, response.id)
   }
 
-  // ---------------------------------------------------------------- helpers
+  @Test
+  fun `getOrCreate rethrows the constraint violation when no workspace can be read afterwards`() {
+    `when`(workspaceRepository.findByStudentProfileIdAndAssessmentIdAndQuestionId(PROFILE_ID, ASSESSMENT_ID, QUESTION_ID))
+      .thenReturn(Optional.empty())
+    `when`(workspaceRepository.save(anyK<AssessmentQuestionWorkspace>())).thenThrow(DataIntegrityViolationException("other constraint"))
+
+    assertFailsWith<DataIntegrityViolationException> {
+      service.getOrCreateWorkspaceForAssessmentQuestion(PROFILE_ID, ASSESSMENT_ID, QUESTION_ID)
+    }
+  }
 
   private fun givenDraft(workspace: AssessmentQuestionWorkspace, revision: Int): AssessmentQuestionDraftRevision {
     val draft = draft(workspace, revision)

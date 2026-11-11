@@ -4,6 +4,7 @@ import io.correcta.workspace.entities.AssessmentQuestionSubmission
 import io.correcta.workspace.entities.AssessmentQuestionSubmissionStatus
 import org.springframework.data.jpa.domain.Specification
 
+/** Optional filters for submissions. A null or blank argument adds no condition. */
 object AssessmentQuestionSubmissionSpecification {
 
   fun hasWorkspaceId(workspaceId: String?): Specification<AssessmentQuestionSubmission>? = workspaceId?.let { value ->
@@ -21,9 +22,12 @@ object AssessmentQuestionSubmissionSpecification {
   }
 
   fun hasLanguage(language: String?): Specification<AssessmentQuestionSubmission>? = language?.takeIf { it.isNotBlank() }?.let { value ->
-    Specification { root, _, cb -> cb.equal(cb.lower(root.get("language")), value.trim().lowercase()) }
+    Specification { root, _, cb ->
+      cb.equal(cb.lower(root.get<Any>("draftRevision").get("language")), value.trim().lowercase())
+    }
   }
 
+  /** Combines every non-null filter with AND. */
   fun filter(
     workspaceId: String? = null,
     studentProfileId: String? = null,

@@ -8,10 +8,9 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.UuidGenerator
 import java.time.Instant
 
-/*
- * A message waiting to reach RabbitMQ. It is written in the same transaction
- * as the change it announces, so the change and the message commit or roll
- * back together; OutboxRelay publishes it afterwards, at least once.
+/**
+ * A message waiting to reach RabbitMQ. It is written in the same transaction as the change it announces,
+ * so the change and the message commit or roll back together; [OutboxRelay] publishes it afterwards, at least once.
  */
 @Entity
 @Table(

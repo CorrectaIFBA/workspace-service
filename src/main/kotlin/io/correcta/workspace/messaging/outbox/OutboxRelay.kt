@@ -14,13 +14,13 @@ import java.sql.Timestamp
 import java.time.Clock
 import java.time.Duration
 
-/*
- * Publishes the outbox to RabbitMQ. A row is marked published only after the
- * broker confirms it; a crash in between publishes it again, so consumers
- * must be idempotent. Failed rows back off exponentially, up to 5 minutes.
+/**
+ * Publishes the outbox to RabbitMQ. A row is marked published only after the broker confirms it;
+ * a crash in between publishes it again, so consumers must be idempotent.
+ * Failed rows back off exponentially, up to 5 minutes.
  *
- * Plain JDBC on purpose: the relay polls every second, and through Hibernate
- * each poll would be printed whenever spring.jpa.show-sql is on.
+ * Plain JDBC on purpose: the relay polls every second, and through Hibernate each poll would be
+ * printed whenever `spring.jpa.show-sql` is on.
  */
 @Component
 class OutboxRelay(
@@ -34,14 +34,13 @@ class OutboxRelay(
 
   private class Pending(val id: String, val exchange: String, val routingKey: String, val payload: String, val attempts: Int)
 
+  /** Drains the outbox: keeps relaying while batches come back full, because more rows may be waiting. */
   @Scheduled(
     fixedDelayString = "\${outbox.relay-interval-ms:1000}",
     initialDelayString = "\${outbox.relay-interval-ms:1000}",
   )
   fun relay() {
-    while (relayBatch() == BATCH_SIZE) {
-      // a full batch may mean more are waiting.
-    }
+    while (relayBatch() == BATCH_SIZE) continue
   }
 
   private fun relayBatch(): Int = transactionTemplate.execute {

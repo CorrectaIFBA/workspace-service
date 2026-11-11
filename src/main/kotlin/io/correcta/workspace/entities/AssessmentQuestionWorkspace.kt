@@ -35,21 +35,15 @@ class AssessmentQuestionWorkspace(
   @Id @UuidGenerator(style = UuidGenerator.Style.TIME)
   var id: String? = null,
 
-  /**
-   * assessment-service assessment id
-   */
+  /** Assessment id in assessment-service. */
   @Column(name = "assessment_id", nullable = false, updatable = false)
   var assessmentId: String,
 
-  /**
-   * assessment-service question id
-   */
+  /** Question id in assessment-service. */
   @Column(name = "question_id", nullable = false, updatable = false)
   var questionId: String,
 
-  /**
-   * identity-service profile id taken from the X-User-Id header
-   */
+  /** Student profile id in identity-service, taken from the `X-User-Id` header. */
   @Column(name = "student_profile_id", nullable = false, updatable = false)
   var studentProfileId: String,
 

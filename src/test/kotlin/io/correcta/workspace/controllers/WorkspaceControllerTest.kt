@@ -43,8 +43,6 @@ class WorkspaceControllerTest(
       .thenReturn(AssessmentSessionStatusResponse("s1", "IN_PROGRESS", null, null, acceptsSubmissions = true, late = false))
   }
 
-  // ------------------------------------------------------------ GET workspace
-
   @Test
   fun `GET workspace returns 200 with ETag of revision 0 for a new workspace`() {
     getWorkspace("q1").andExpect {
@@ -84,8 +82,6 @@ class WorkspaceControllerTest(
       jsonPath("$.currentDraft.revision") { value(1) }
     }
   }
-
-  // ------------------------------------------------------------ PUT drafts
 
   @Test
   fun `PUT draft with matching If-Match returns the new ETag`() {
@@ -161,7 +157,16 @@ class WorkspaceControllerTest(
     saveDraft(id, "\"0\"").andExpect { status { isForbidden() } }
   }
 
-  // ------------------------------------------------------------ POST submissions
+  @Test
+  fun `POST run returns 200 for the latest draft`() {
+    val id = workspaceId("q1")
+    saveDraft(id, "\"0\"").andExpect { status { isOk() } }
+
+    mockMvc.post("/workspaces/$id/runs") {
+      header("X-User-Id", PROFILE_ID)
+      header("X-User-Profile-Type", "STUDENT")
+    }.andExpect { status { isOk() } }
+  }
 
   @Test
   fun `a single question cannot be submitted on its own`() {
@@ -174,8 +179,6 @@ class WorkspaceControllerTest(
       header("If-Match", "\"1\"")
     }.andExpect { status { is4xxClientError() } }
   }
-
-  // ------------------------------------------------------------ POST submit all
 
   @Test
   fun `POST submit-all returns 202 and needs no If-Match`() {
@@ -205,8 +208,6 @@ class WorkspaceControllerTest(
     }
       .andExpect { status { isForbidden() } }
   }
-
-  // ------------------------------------------------------------ helpers
 
   private fun getWorkspace(questionId: String, profileId: String = PROFILE_ID): ResultActionsDsl = mockMvc.get("/workspaces/assessment/$assessmentId/questions/$questionId") {
     header("X-User-Id", profileId)
