@@ -2,9 +2,7 @@ package io.correcta.workspace.security.components.aspects
 
 import io.correcta.workspace.exceptions.UnauthorizedException
 import io.correcta.workspace.security.annotations.IsLoggedUser
-import io.correcta.workspace.security.annotations.IsNotTraitedWith
 import io.correcta.workspace.security.annotations.IsProfileType
-import io.correcta.workspace.security.annotations.IsTraitedWith
 import io.correcta.workspace.security.components.ScopeEvaluatorComponent
 import org.aspectj.lang.JoinPoint
 import org.aspectj.lang.annotation.Aspect
@@ -17,7 +15,7 @@ import org.springframework.stereotype.Component
 import java.lang.reflect.Method
 
 /**
- * Enforces the `@IsLoggedUser`, `@IsProfileType`, `@IsTraitedWith` and `@IsNotTraitedWith` annotations on controller methods.
+ * Enforces the `@IsLoggedUser` and `@IsProfileType` annotations on controller methods.
  * Annotations are looked up on the interface too, because endpoints are declared there.
  */
 @Aspect
@@ -35,16 +33,6 @@ class SecurityAspect(
 
     val isProfileType = findSecurityAnnotation<IsProfileType>(joinPoint)
     if (isProfileType != null && !scopeEvaluator.isProfileType(isProfileType.profileType)) {
-      throwAccessDenied()
-    }
-
-    val isTraitedWith = findSecurityAnnotation<IsTraitedWith>(joinPoint)
-    if (isTraitedWith != null && !scopeEvaluator.isTraitedWith(isTraitedWith.trait)) {
-      throwAccessDenied()
-    }
-
-    val isNotTraitedWith = findSecurityAnnotation<IsNotTraitedWith>(joinPoint)
-    if (isNotTraitedWith != null && !scopeEvaluator.isNotTraitedWith(isNotTraitedWith.trait)) {
       throwAccessDenied()
     }
   }

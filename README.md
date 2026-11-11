@@ -73,9 +73,9 @@ Os erros têm o corpo `{ "message": "..." }`. Para o fluxo completo do frontend,
 ## Autenticação
 
 O serviço **não valida tokens**. Ele confia nos cabeçalhos de identidade que o gateway injeta
-(`X-User-Id`, `X-User-Person-Id`, `X-User-Profile-Type`, `X-User-Login`, `X-User-Email`, `X-User-Traits`).
+(`X-User-Id`, `X-User-Person-Id`, `X-User-Profile-Type`, `X-User-Login`, `X-User-Email`).
 Por isso ele só pode ser acessível pelo gateway. A permissão de cada endpoint é verificada pelas anotações
-`@IsLoggedUser`, `@IsProfileType`, `@IsTraitedWith` e `@IsNotTraitedWith`, aplicadas pelo `SecurityAspect`.
+`@IsLoggedUser` e `@IsProfileType`, aplicadas pelo `SecurityAspect`.
 
 ## Mensageria
 

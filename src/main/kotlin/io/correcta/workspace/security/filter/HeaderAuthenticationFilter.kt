@@ -6,7 +6,6 @@ import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.filter.OncePerRequestFilter
 
@@ -24,23 +23,16 @@ class HeaderAuthenticationFilter : OncePerRequestFilter() {
     val profileId = request.readHeader(IdentityHeaders.PROFILE_ID)
 
     if (profileId != null) {
-      val traits = request.readHeader(IdentityHeaders.TRAITS)
-        ?.split(",")
-        ?.map { it.trim() }
-        ?.filter { it.isNotEmpty() }
-        .orEmpty()
-
       val principal = ProfilePrincipal(
         profileId = profileId,
         personId = request.readHeader(IdentityHeaders.PERSON_ID),
         profileType = request.readHeader(IdentityHeaders.PROFILE_TYPE),
         login = request.readHeader(IdentityHeaders.LOGIN),
         email = request.readHeader(IdentityHeaders.EMAIL),
-        traits = traits,
       )
 
       SecurityContextHolder.getContext().authentication =
-        UsernamePasswordAuthenticationToken(principal, null, traits.map(::SimpleGrantedAuthority))
+        UsernamePasswordAuthenticationToken(principal, null, emptyList())
     }
 
     filterChain.doFilter(request, response)
